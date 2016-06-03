@@ -14,6 +14,10 @@ type Trans interface{
    Close()
 }
 
+type TransListener interface {
+   OnMessageArrival(m *Message)
+}
+
 type TransConfig struct {
    LocalPeerInfo  string  //{"id":"qs01", "ct":"61.22.34.14:9900", "cnc":"10.22.34.53:3340"}
    MaxConns int      //valid for tcp trans, max number of tcp connection
