@@ -57,7 +57,7 @@ func (a *RpcAdapter) Call(peerId string, req []byte, timeout int) ([]byte, error
    seq := a.seq.Next()
    e.req = &Message{seq:seq, data:req}
    e.done = make(chan int)
-   a.rpcReg.put(e)
+   a.rpcReg.add(e)
    a.GetTxChan() <- e
    if timeout == 0 {  //no timeout
       <-e.done
