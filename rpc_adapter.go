@@ -44,18 +44,13 @@ type RpcAdapter struct {
    
 }
 
-func (a *RpcAdapter) RegisterCall() chan int {
-   
-}
-
-func (a *RpcAdapter) adapterLoop() {
-   for {
-      select {
-          
-
-      }
+func (a *RpcAdapter) OnMessageArrival(m *Message) {
+   if e:=a.rpcReg.del(m.seq);e!=nil {
+      e.rsp = m  
+      e.done <- 1
    }
 }
+
 
 func (a *RpcAdapter) Call(peerId string, req []byte, timeout int) ([]byte, error) {
    e := &RegistryEntry{}
@@ -74,8 +69,8 @@ func (a *RpcAdapter) Call(peerId string, req []byte, timeout int) ([]byte, error
      case <-e.done:
         return e.rsp.data, nil
      case <-to:
-        t.reqReg.del(seq)
-        return "", ERR_RPC_TIMEOUT
+        t.rpcReg.del(seq)
+        return nil, ERR_RPC_TIMEOUT
    }
 }
 
