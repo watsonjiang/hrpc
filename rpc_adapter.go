@@ -1,12 +1,12 @@
 package hrpc
+
 type RpcHandler func(req []byte) []byte
 
 var ERR_RPC_TIMEOUT = errors.New("RPC call timeout")
 
-
 type RpcRegistryEntry struct{
-   req *Request
-   rsp *Response
+   req *Message
+   rsp *Message
    done chan int
 }
 
@@ -39,41 +39,40 @@ func (r *RpcRegistry) del(seq int32) *RpcRegistryEntry {
 
 type RpcAdapter struct {
    trans Trans
+   seq *Sequencer
+   rpcReg *RpcRegistry
+   
 }
 
 func (a *RpcAdapter) RegisterCall() chan int {
-
+   
 }
 
-func (a *RpcAdapter) adapterLoop(p *Peer) {
+func (a *RpcAdapter) adapterLoop() {
    for {
       select {
-        
+          
 
-
+      }
    }
 }
 
-func (t *RpcAdapter) Call(peerId string, req []byte, timeout int) ([]byte, error) {
+func (a *RpcAdapter) Call(peerId string, req []byte, timeout int) ([]byte, error) {
    e := &RegistryEntry{}
-   seq := t.seq.Next()
-   e.req = &Request{seq:seq, data:[]byte(d)}
+   seq := a.seq.Next()
+   e.req = &Message{seq:seq, data:req}
    e.done = make(chan int)
-   t.reqReg.put(e)
-   if len(req) < t.cfg.BigMsgSize {
-      t.reqChan <- e
-   }else{
-      t.reqChan1<-e
-   }
+   a.rpcReg.put(e)
+   a.GetTxChan() <- e
    if timeout == 0 {  //no timeout
       <-e.done
-      return string(e.rsp.data), nil
+      return e.rsp.data, nil
    }
    to := make(chan int64, 1)
    t.timer.Schedule(timeout, to)
    select {
      case <-e.done:
-        return string(e.rsp.data), nil
+        return e.rsp.data, nil
      case <-to:
         t.reqReg.del(seq)
         return "", ERR_RPC_TIMEOUT
