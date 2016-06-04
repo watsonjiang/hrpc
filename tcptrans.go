@@ -114,6 +114,7 @@ func (t *TcpTrans) rxLoop(p *Peer, cli net.Conn) {
       binary.Read(cli, binary.LittleEndian, &data)
       m := decodeMessage(data)
       if m.isReqMsg() {
+         m.peerId = p.Id
          t.listener.OnReqArrival(m)
       }else{
          t.listener.OnRspArrival(m)
