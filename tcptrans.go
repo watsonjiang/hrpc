@@ -39,8 +39,8 @@ func (t *TcpTrans) OnPeerUpdated(oldv, newv *Peer) {
 }
 
 //Trans
-func (t *TcpTrans) Send(peerId string, m *Message) {
-   t.getTxChan(peerId) <- m   
+func (t *TcpTrans) Send(m *Message) {
+   t.getTxChan(m.peerId) <- m   
 }
 
 func (t *TcpTrans) getTxChan(peerId string) chan *Message {
