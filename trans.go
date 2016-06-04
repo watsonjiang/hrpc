@@ -7,8 +7,8 @@ type Trans interface{
 
    Send(peerId, m *Message)
    GetTxChan(peerId string) chan *Message
-
-   GetRxChan(peerId string) chan *Message
+  
+   RegisteListener(l TransListener)
 
    Start()
 
