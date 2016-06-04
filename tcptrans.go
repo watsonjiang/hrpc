@@ -37,7 +37,15 @@ func (t *TcpTrans) OnPeerUpdated(oldv, newv *Peer) {
 
 }
 
-//client
+//Trans
+func (t *TcpTrans) Send(peerId string, m *Message) {
+   t.GetTxChan(peerId) <- m   
+}
+
+func (t *TcpTrans) GetTxChan(peerId string) chan *Message {
+   return t.peerReg.Get(peerId) 
+}
+
 func (t *TcpTrans) AddPeer(peerInfo string) error {
    p := NewPeer(peerInfo)
    p.txQuota = make(chan int, txQuota)
