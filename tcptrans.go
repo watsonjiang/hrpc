@@ -58,9 +58,14 @@ func (t *TcpTrans) AddPeer(peerInfo string) error {
    for i:=0; i<c.connNum; i++ {
       conn, err := net.Dial("tcp", c.addr)
       fmt.Println("cli make conn", c.addr, conn, err, "mode", c.mode)
-      c.connMade(conn)
+      go t.handshake(conn)
    }
 }
+
+func (t *TcpTrans) handshake(conn net.Conn) {
+   t.linkMade(peer, conn)
+}
+
 
 func (t *TcpTrans) txQuotaLoop() {
    ch := make(chan int64, 1)
@@ -116,7 +121,7 @@ func (t *TcpTrans) rxLoop(p *Peer, cli net.Conn) {
    }
 }
 
-func (t *TcpTrans) connectionMade(p *Peer, cli net.Conn) {
+func (t *TcpTrans) linkMade(p *Peer, cli net.Conn) {
    //TODO: handshake
    go t.rxLoop(p, cli)
    go t.rxLoop(p, cli)
@@ -127,6 +132,12 @@ func (t *TcpTrans) Listen(addr string) error {
   go t.listenLoop()
 }
 
+func (t *TcpTrans) waitForHandshake(conn net.Conn) {
+   
+   
+   t.linkMade(peer, conn)
+}
+
 func (t *TcpTrans) listenLoop() {
    p := NewPeer(t.cfg.LocalPeerInfo)
    addr := p.Addr[0]
@@ -135,7 +146,7 @@ func (t *TcpTrans) listenLoop() {
    for {
       client, _ := listener.Accept()
       fmt.Println("svr got conn", client)
-      go t.connMade(client)
+      go t.waitForHandshake(client)
    }
 }
 
