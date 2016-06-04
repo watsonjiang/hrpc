@@ -1,10 +1,19 @@
 package hrpc
 
+const (
+   MSG_TYPE_REQ
+   MSG_TYPE_RSP
+   )
 
 //message
 type Message struct {
    seq int32
+   mtype int
    data []byte
+}
+
+func (r *Message) isReqMsg() bool {
+   return r.mtype == MSG_TYPE_REQ 
 }
 
 func (r *Message) Bytes() []byte {
