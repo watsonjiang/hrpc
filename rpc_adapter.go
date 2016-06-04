@@ -44,7 +44,7 @@ type RpcAdapter struct {
    
 }
 
-func (a *RpcAdapter) OnMessageArrival(m *Message) {
+func (a *RpcAdapter) OnRspArrival(m *Message) {
    if e:=a.rpcReg.del(m.seq);e!=nil {
       e.rsp = m  
       e.done <- 1
