@@ -40,10 +40,10 @@ func (t *TcpTrans) OnPeerUpdated(oldv, newv *Peer) {
 
 //Trans
 func (t *TcpTrans) Send(peerId string, m *Message) {
-   t.GetTxChan(peerId) <- m   
+   t.getTxChan(peerId) <- m   
 }
 
-func (t *TcpTrans) GetTxChan(peerId string) chan *Message {
+func (t *TcpTrans) getTxChan(peerId string) chan *Message {
    return t.peerReg.Get(peerId) 
 }
 
@@ -128,8 +128,10 @@ func (t *TcpTrans) Listen(addr string) error {
 }
 
 func (t *TcpTrans) listenLoop() {
-   listener, err := net.Listen("tcp", s.addr)
-   fmt.Println("svr listen on ", s.addr, "err:", err)
+   p := NewPeer(t.cfg.LocalPeerInfo)
+   addr := p.Addr[0]
+   listener, err := net.Listen("tcp", addr)
+   fmt.Println("svr listen on ", addr, "err:", err)
    for {
       client, _ := listener.Accept()
       fmt.Println("svr got conn", client)
