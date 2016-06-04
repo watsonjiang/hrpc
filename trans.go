@@ -5,7 +5,7 @@ package hrpc
 type Trans interface{
    AddPeer(peerInfo string) error
 
-   Send(peerId, m *Message)
+   Send(m *Message)
   
    RegisteListener(l TransListener)
 
