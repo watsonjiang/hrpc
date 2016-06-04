@@ -7,6 +7,7 @@ type TcpTrans struct {
    peerReg PeerRegistry
    timer *TimerQueue
    txQuota chan int
+   listener TransListener
 }
 
 func NewTcpTrans(c *TransConfig) *Trans {
@@ -44,6 +45,10 @@ func (t *TcpTrans) Send(peerId string, m *Message) {
 
 func (t *TcpTrans) GetTxChan(peerId string) chan *Message {
    return t.peerReg.Get(peerId) 
+}
+
+func (t *TcpTrans) RegisteListener(l TransListener) {
+   t.listener = l
 }
 
 func (t *TcpTrans) AddPeer(peerInfo string) error {
