@@ -1,6 +1,6 @@
 package hrpc
 
-type RpcHandler func(req []byte) []byte
+type RpcHandlerFunc func(req []byte) []byte
 
 var ERR_RPC_TIMEOUT = errors.New("RPC call timeout")
 
@@ -41,7 +41,16 @@ type RpcAdapter struct {
    trans Trans
    seq *Sequencer
    rpcReg *RpcRegistry
-   
+   rpcHandler RpcHandlerFunc
+}
+
+func (a *RpcAdapter) RegisterRpcHandler(f RpcHandlerFunc) {
+   a.rpcHandler = f
+}
+
+func (a *RpcAdapter) OnReqArrival(m *Message) *Message {
+   data = a.rpcHandler(m.data)
+   return &Message{seq:m.seq, data:data}
 }
 
 func (a *RpcAdapter) OnRspArrival(m *Message) {
@@ -50,7 +59,6 @@ func (a *RpcAdapter) OnRspArrival(m *Message) {
       e.done <- 1
    }
 }
-
 
 func (a *RpcAdapter) Call(peerId string, req []byte, timeout int) ([]byte, error) {
    e := &RegistryEntry{}
