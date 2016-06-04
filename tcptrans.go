@@ -108,7 +108,11 @@ func (t *TcpTrans) rxLoop(p *Peer, cli net.Conn) {
       data := make([]byte, l)
       binary.Read(cli, binary.LittleEndian, &data)
       m := decodeMessage(data)
-      p.rxChan <- m
+      if m.isReqMsg() {
+         t.listener.OnReqArrival(m)
+      }else{
+         t.listener.OnRspArrival(m)
+      }
    }
 }
 
