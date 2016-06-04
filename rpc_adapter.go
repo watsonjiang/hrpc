@@ -48,9 +48,11 @@ func (a *RpcAdapter) RegisterRpcHandler(f RpcHandlerFunc) {
    a.rpcHandler = f
 }
 
-func (a *RpcAdapter) OnReqArrival(m *Message) {
-   data = a.rpcHandler(m.data)
-   r.trans.GetTxQueue() <- &Message{seq:m.seq, data:data}
+func (a *RpcAdapter) OnReqArrival(req *Message) {
+   data := a.rpcHandler(m.data)
+   rsp := req.MakeResponse()
+   rsp.data = data
+   r.trans.Send(rsp)
 }
 
 func (a *RpcAdapter) OnRspArrival(m *Message) {
