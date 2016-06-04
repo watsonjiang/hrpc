@@ -6,7 +6,6 @@ type Trans interface{
    AddPeer(peerInfo string) error
 
    Send(peerId, m *Message)
-   GetTxChan(peerId string) chan *Message
   
    RegisteListener(l TransListener)
 
