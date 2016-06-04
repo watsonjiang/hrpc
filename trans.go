@@ -15,7 +15,8 @@ type Trans interface{
 }
 
 type TransListener interface {
-   OnMessageArrival(m *Message)
+   OnReqArrival(m *Message)
+   OnRspArrival(m *Message)
 }
 
 type TransConfig struct {
