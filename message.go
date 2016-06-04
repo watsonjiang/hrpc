@@ -9,6 +9,7 @@ const (
 type Message struct {
    seq int32
    mtype int8
+   peerId string
    data []byte
 }
 
