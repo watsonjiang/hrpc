@@ -9,7 +9,6 @@ type Peer struct {
    Id string
    Addr []string
    txChan  chan *Message
-   rxChan  chan *Message
 }
 
 func NewPeer(info string) *Peer {
