@@ -26,6 +26,19 @@ func (r *Message) Bytes() []byte {
    return buf.Bytes()
 }
 
+func (r *Message) MakeResponse() *Message {
+   m := &Message{}
+   m.seq = r.seq
+   m.mtype = MSG_TYPE_RSP
+   return m
+}
+
+func NewRequest() {
+   m := &Message{}
+   m.mtype = MSG_TYPE_REQ
+   return m
+}
+
 func decodeMessage(buf []byte) *Message{
    r := &Message{}
    rd := bytes.NewReader(buf)
