@@ -1,9 +1,13 @@
 package hrpc
 
+import (
+   "bytes"
+   "encoding/binary"
+)
+
 const (
-   MSG_TYPE_REQ
-   MSG_TYPE_RSP
-   )
+   MSG_BIT_REQ_RSP = 0x01
+)
 
 //message
 type Message struct {
@@ -14,7 +18,10 @@ type Message struct {
 }
 
 func (r *Message) isReqMsg() bool {
-   return r.mtype == MSG_TYPE_REQ 
+   if 0 == r.mtype & MSG_BIT_REQ_RSP {
+      return false
+   }
+   return true
 }
 
 func (r *Message) Bytes() []byte {
@@ -29,13 +36,13 @@ func (r *Message) Bytes() []byte {
 func (r *Message) MakeResponse() *Message {
    m := &Message{}
    m.seq = r.seq
-   m.mtype = MSG_TYPE_RSP
+   m.mtype &= ^MSG_BIT_REQ_RSP
    return m
 }
 
-func NewRequest() {
+func NewRequest() *Message{
    m := &Message{}
-   m.mtype = MSG_TYPE_REQ
+   m.mtype &= MSG_BIT_REQ_RSP
    return m
 }
 
