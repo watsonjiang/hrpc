@@ -1,8 +1,8 @@
 package hrpc
 
 import (
-   "atomic"
-   )
+   "sync/atomic"
+)
 
 type Sequencer struct {
    seq int32

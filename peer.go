@@ -1,5 +1,10 @@
 package hrpc
 
+import (
+   "sync"
+   "encoding/json"
+)
+
 const (
    MAX_PEER_TX_QUEUE_SIZE = 1024
    MAX_PEER_RX_QUEUE_SIZE = 1024
@@ -13,14 +18,14 @@ type Peer struct {
 
 func NewPeer(info string) *Peer {
    p := &Peer{}
-   if err:=json.Unmarshal(info, p);err!=nil {
+   if err:=json.Unmarshal([]byte(info), p);err!=nil {
       return nil
    }
    p.txChan = make(chan *Message, MAX_PEER_TX_QUEUE_SIZE)
-   p.rxChan = make(chan *Message, MAX_PEER_RX_QUEUE_SIZE)
+   return p
 }
 
-type PeerRegistryListener struct {
+type PeerRegistryListener interface {
    OnPeerAdded(p *Peer)
    OnPeerUpdated(oldv, newv *Peer)
 }
@@ -41,11 +46,11 @@ func NewPeerRegistry(l PeerRegistryListener) *PeerRegistry {
 func (r *PeerRegistry) Put(p *Peer) {
    r.lock.Lock()
    defer r.lock.Unlock()
-   if oldv, ok:=r.reg[id]; ok{
-      r.reg[id] = p
+   if oldv, ok:=r.reg[p.Id]; ok{
+      r.reg[p.Id] = p
       r.listener.OnPeerUpdated(oldv, p)
    }else{
-      r.reg[id] = p
+      r.reg[p.Id] = p
       r.listener.OnPeerAdded(p)
    }
 }

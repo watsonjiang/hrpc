@@ -1,5 +1,10 @@
 package hrpc
 
+import (
+   "sync"
+   "errors"
+)
+
 type RpcHandlerFunc func(req []byte) []byte
 
 var ERR_RPC_TIMEOUT = errors.New("RPC call timeout")
@@ -15,9 +20,9 @@ type RpcRegistry struct {
    lock sync.Mutex
 }
 
-func NewRpcRegistry() *SyncReqRegistry {
-   return &Registry{
-      reg:make(map[int32] *RegistryEntry),
+func NewRpcRegistry() *RpcRegistry {
+   return &RpcRegistry{
+      reg:make(map[int32] *RpcRegistryEntry),
    }
 }
 
@@ -31,7 +36,7 @@ func (r *RpcRegistry) del(seq int32) *RpcRegistryEntry {
    r.lock.Lock()
    defer r.lock.Unlock()
    if e, ok:= r.reg[seq]; ok {
-      delete(r, seq)
+      delete(r.reg, seq)
       return e
    }
    return nil
@@ -49,25 +54,25 @@ func (a *RpcAdapter) RegisterRpcHandler(f RpcHandlerFunc) {
 }
 
 func (a *RpcAdapter) OnReqArrival(req *Message) {
-   data := a.rpcHandler(m.data)
+   data := a.rpcHandler(req.data)
    rsp := req.MakeResponse()
    rsp.data = data
-   r.trans.Send(rsp)
+   a.trans.Send(rsp)
 }
 
-func (a *RpcAdapter) OnRspArrival(m *Message) {
-   if e:=a.rpcReg.del(m.seq);e!=nil {
-      e.rsp = m  
+func (a *RpcAdapter) OnRspArrival(rsp *Message) {
+   if e:=a.rpcReg.del(rsp.seq);e!=nil {
+      e.rsp = rsp
       e.done <- 1
    }
 }
 
 func (a *RpcAdapter) Call(peerId string, req []byte, timeout int) ([]byte, error) {
-   e := &RegistryEntry{}
+   e := &RpcRegistryEntry{}
    seq := a.seq.Next()
    e.req = &Message{seq:seq, data:req}
    e.done = make(chan int)
-   a.rpcReg.add(e)
+   a.rpcReg.add(seq, e)
    a.GetTxChan() <- e
    if timeout == 0 {  //no timeout
       <-e.done

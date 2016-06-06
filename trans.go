@@ -6,7 +6,7 @@ type Trans interface{
    AddPeer(peerInfo string) error
 
    Send(m *Message)
-  
+
    RegisteListener(l TransListener)
 
    Start()
@@ -29,8 +29,4 @@ type TransConfig struct {
 
 func NewTransDefaultCfg() *TransConfig {
    return &TransConfig{}
-}
-
-func NewTcpTrans(cfg *TransConfig) Trans {
-   return &TcpTransImpl{}
 }
