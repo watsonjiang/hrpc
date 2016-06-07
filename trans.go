@@ -9,8 +9,6 @@ type Trans interface{
 
    RegisteListener(l TransListener)
 
-   Start()
-
    Close()
 }
 

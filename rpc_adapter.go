@@ -47,6 +47,7 @@ type RpcAdapter struct {
    seq *Sequencer
    rpcReg *RpcRegistry
    rpcHandler RpcHandlerFunc
+   timer *TimerQueue
 }
 
 func (a *RpcAdapter) RegisterRpcHandler(f RpcHandlerFunc) {
@@ -73,18 +74,18 @@ func (a *RpcAdapter) Call(peerId string, req []byte, timeout int) ([]byte, error
    e.req = &Message{seq:seq, data:req}
    e.done = make(chan int)
    a.rpcReg.add(seq, e)
-   a.GetTxChan() <- e
+   a.trans.Send(e.req)
    if timeout == 0 {  //no timeout
       <-e.done
       return e.rsp.data, nil
    }
    to := make(chan int64, 1)
-   t.timer.Schedule(timeout, to)
+   a.timer.Schedule(int64(timeout), to)
    select {
      case <-e.done:
         return e.rsp.data, nil
      case <-to:
-        t.rpcReg.del(seq)
+        a.rpcReg.del(seq)
         return nil, ERR_RPC_TIMEOUT
    }
 }

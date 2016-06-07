@@ -1,16 +1,24 @@
 package hrpc
 
+import (
+   "net"
+   "fmt"
+   "bytes"
+   "encoding/binary"
+   log "github.com/golang/glog"
+)
+
 //internal implementation
 type TcpTrans struct {
    cfg *TransConfig
    seq  *Sequencer
-   peerReg PeerRegistry
+   peerReg *PeerRegistry
    timer *TimerQueue
    txQuota chan int
    listener TransListener
 }
 
-func NewTcpTrans(c *TransConfig) *Trans {
+func NewTcpTrans(c *TransConfig) Trans {
    t := &TcpTrans{}
    t.cfg = c
    t.peerReg = NewPeerRegistry(t)
@@ -20,6 +28,7 @@ func NewTcpTrans(c *TransConfig) *Trans {
    if c.MaxSendRate != 0 {
       go t.txQuotaLoop()
    }
+   return t
 }
 
 //PeerRegistryListener
@@ -29,8 +38,9 @@ func (t *TcpTrans) OnPeerAdded(p *Peer) {
       if conn, err:=net.Dial("tcp", addr);err!=nil {
          log.Errorf("Fail to connect addr[%v], err:%v", addr, err)
          continue
+      }else{
+         t.linkMade(p, conn)
       }
-      t.connectionMade(p, conn)
    }
 }
 
@@ -40,11 +50,11 @@ func (t *TcpTrans) OnPeerUpdated(oldv, newv *Peer) {
 
 //Trans
 func (t *TcpTrans) Send(m *Message) {
-   t.getTxChan(m.peerId) <- m   
+   t.getTxChan(m.peerId) <- m
 }
 
 func (t *TcpTrans) getTxChan(peerId string) chan *Message {
-   return t.peerReg.Get(peerId) 
+   return t.peerReg.Get(peerId).txChan
 }
 
 func (t *TcpTrans) RegisteListener(l TransListener) {
@@ -53,16 +63,17 @@ func (t *TcpTrans) RegisteListener(l TransListener) {
 
 func (t *TcpTrans) AddPeer(peerInfo string) error {
    p := NewPeer(peerInfo)
-   p.txQuota = make(chan int, txQuota)
-   t.peerReg.Add(peer)
-   for i:=0; i<c.connNum; i++ {
-      conn, err := net.Dial("tcp", c.addr)
-      fmt.Println("cli make conn", c.addr, conn, err, "mode", c.mode)
+   t.peerReg.Put(p)
+   for i:=0; i<t.cfg.MaxConns; i++ {
+      conn, err := net.Dial("tcp", p.Addr[0])
+      fmt.Println("cli make conn", p.Addr, conn, err)
       go t.handshake(conn)
    }
+   return nil
 }
 
 func (t *TcpTrans) handshake(conn net.Conn) {
+   var peer *Peer
    t.linkMade(peer, conn)
 }
 
@@ -73,7 +84,7 @@ func (t *TcpTrans) txQuotaLoop() {
       r := t.cfg.MaxSendRate
       for i:=0;i<r;i++ {
          if len(t.txQuota) < r {
-            c.txQuota<-1
+            t.txQuota<-1
          }
       }
       t.timer.Schedule(1000, ch)
@@ -131,11 +142,11 @@ func (t *TcpTrans) linkMade(p *Peer, cli net.Conn) {
 //server
 func (t *TcpTrans) Listen(addr string) error {
   go t.listenLoop()
+  return nil
 }
 
 func (t *TcpTrans) waitForHandshake(conn net.Conn) {
-   
-   
+   var peer *Peer
    t.linkMade(peer, conn)
 }
 
