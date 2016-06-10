@@ -48,10 +48,14 @@ func (r *PeerRegistry) Put(p *Peer) {
    defer r.lock.Unlock()
    if oldv, ok:=r.reg[p.Id]; ok{
       r.reg[p.Id] = p
-      r.listener.OnPeerUpdated(oldv, p)
+      if r.listener != nil {
+         r.listener.OnPeerUpdated(oldv, p)
+      }
    }else{
       r.reg[p.Id] = p
-      r.listener.OnPeerAdded(p)
+      if r.listener != nil {
+         r.listener.OnPeerAdded(p)
+      }
    }
 }
 
