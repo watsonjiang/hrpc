@@ -23,7 +23,7 @@ func NewTcpTrans(c *TransConfig) Trans {
    t.cfg = c
    t.peerReg = NewPeerRegistry(t)
    t.timer = NewTimerQueue()
-   go t.timer.Run()
+   t.timer.Start()
    t.seq = NewSequencer32(0)
    if c.MaxSendRate != 0 {
       go t.txQuotaLoop()

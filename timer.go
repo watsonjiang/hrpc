@@ -35,6 +35,8 @@ type TimerQueue struct {
    pendingTimers *list.List
    mutex         sync.Mutex
    sequencer     *Sequencer64
+   stop          bool
+   stopCh        chan int
 }
 
 func NewTimerQueue() *TimerQueue {
@@ -43,6 +45,8 @@ func NewTimerQueue() *TimerQueue {
       ticks:         0,
       pendingTimers: list.New(),
       sequencer:     NewSequencer64(int64(0)),
+      stop:          false,
+      stopCh:        make(chan int),
    }
    for i := 0; i < MAXN_LEVEL; i++ {
       if i == 0 {
@@ -57,6 +61,8 @@ func NewTimerQueue() *TimerQueue {
    return tq
 }
 
+//schedule timer in millisecond
+//ch will be signaled at the timeout
 func (tq *TimerQueue) Schedule(delay int64, ch chan int64) int64 {
    delay = delay * 1e6
    if delay < MIN_TICK_INTERVAL {
@@ -75,11 +81,15 @@ func (tq *TimerQueue) Schedule(delay int64, ch chan int64) int64 {
    return ev.id
 }
 
-func (tq *TimerQueue) Run() {
+func (tq *TimerQueue) Start() {
    ti := int64(1e9 / FPS)
    go func() {
       last := now()
       for {
+         if tq.stop {
+            tq.stopCh <- 1
+            break
+         }
          curr := now()
          tq.tick(curr - last)
          last = curr
@@ -89,6 +99,11 @@ func (tq *TimerQueue) Run() {
          }
       }
    }()
+}
+
+func (tq *TimerQueue) Stop() {
+   tq.stop = true
+   <-tq.stopCh
 }
 
 func now() int64 {
