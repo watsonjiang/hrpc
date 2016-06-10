@@ -11,7 +11,7 @@ import (
 //internal implementation
 type TcpTrans struct {
    cfg *TransConfig
-   seq  *Sequencer
+   seq  *Sequencer32
    peerReg *PeerRegistry
    timer *TimerQueue
    txQuota chan int
@@ -24,7 +24,7 @@ func NewTcpTrans(c *TransConfig) Trans {
    t.peerReg = NewPeerRegistry(t)
    t.timer = NewTimerQueue()
    go t.timer.Run()
-   t.seq = NewSequencer(0)
+   t.seq = NewSequencer32(0)
    if c.MaxSendRate != 0 {
       go t.txQuotaLoop()
    }

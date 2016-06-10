@@ -44,7 +44,7 @@ func (r *RpcRegistry) del(seq int32) *RpcRegistryEntry {
 
 type RpcAdapter struct {
    trans Trans
-   seq *Sequencer
+   seq *Sequencer32
    rpcReg *RpcRegistry
    rpcHandler RpcHandlerFunc
    timer *TimerQueue

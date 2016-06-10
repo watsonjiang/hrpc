@@ -31,18 +31,18 @@ type timer struct {
 type TimerQueue struct {
    tickTime      int64
    ticks         int64
-   nextTimerId   int64
    tvec          [MAXN_LEVEL][]*list.List
    pendingTimers *list.List
    mutex         sync.Mutex
+   sequencer     *Sequencer64
 }
 
 func NewTimerQueue() *TimerQueue {
    tq := &TimerQueue{
       tickTime:      now(),
       ticks:         0,
-      nextTimerId:   0,
       pendingTimers: list.New(),
+      sequencer:     NewSequencer64(int64(0)),
    }
    for i := 0; i < MAXN_LEVEL; i++ {
       if i == 0 {
@@ -63,7 +63,7 @@ func (tq *TimerQueue) Schedule(delay int64, ch chan int64) int64 {
       delay = MIN_TICK_INTERVAL
    }
    ev := &timer{
-      id:     tq.genID(),
+      id:     tq.sequencer.Next(),
       expire: atomic.LoadInt64(&(tq.tickTime)) + delay,
       node:   nil,
       root:   nil,
@@ -89,11 +89,6 @@ func (tq *TimerQueue) Run() {
          }
       }
    }()
-}
-
-func (tq *TimerQueue) genID() int64 {
-   tq.nextTimerId++
-   return tq.nextTimerId
 }
 
 func now() int64 {
