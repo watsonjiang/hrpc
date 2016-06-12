@@ -3,8 +3,6 @@ package hrpc
 import (
    "net"
    "fmt"
-   "bytes"
-   "encoding/binary"
    log "github.com/golang/glog"
 )
 
@@ -93,16 +91,14 @@ func (t *TcpTrans) txQuotaLoop() {
 }
 
 func (t *TcpTrans) txLoop(p *Peer, cli net.Conn) {
-   var tmp_buf bytes.Buffer
    quotaCnt := 0
    for m := range p.txChan {
-      tmp_buf.Reset()
-      data := m.Bytes()
-      binary.Write(&tmp_buf, binary.LittleEndian, int32(len(data)))
-      binary.Write(&tmp_buf, binary.LittleEndian, data)
+      cnt, err := m.WriteTo(cli)
+      if err != nil {
+         //TODO: close both tx and rx loop
+      }
       if t.cfg.MaxSendRate != 0{
-         tmpl := tmp_buf.Len()
-         quotaCnt = quotaCnt - tmpl
+         quotaCnt = quotaCnt - cnt
          if quotaCnt < 0 {
             for {
                 quota := <-t.txQuota
@@ -113,18 +109,16 @@ func (t *TcpTrans) txLoop(p *Peer, cli net.Conn) {
             }
          }
       }
-      cli.Write(tmp_buf.Bytes())
    }
 }
 
 func (t *TcpTrans) rxLoop(p *Peer, cli net.Conn) {
    for {
-      var l int32
-      binary.Read(cli, binary.LittleEndian, &l)
-      data := make([]byte, l)
-      binary.Read(cli, binary.LittleEndian, &data)
-      m := decodeMessage(data)
-      if m.isReqMsg() {
+      m := NewMessage()
+      if err:=m.ReadFrom(cli);err!=nil{
+         //TODO: close both tx and rx loop
+      }
+      if m.IsReqMsg() {
          m.peerId = p.Id
          t.listener.OnReqArrival(m)
       }else{
