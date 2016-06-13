@@ -2,14 +2,15 @@ package hrpc
 
 import (
    "fmt"
-   "bytes"
    "encoding/binary"
    "encoding/hex"
    "io"
+   "strconv"
 )
 
 const (
    MSG_RSP_BIT = 0x01
+   MSG_HANDSHAKE_BIT = 0x02
 )
 
 //message
@@ -17,20 +18,28 @@ type Message struct {
    seq int32
    mtype int8
    peerId string
-   data bytes.Buffer
+   data []byte
 }
 
 func NewMessage() *Message {
-   return &Message{}
+   return &Message{data:nil}
 }
 
 func (m *Message) String() string {
-   return fmt.Sprintf("seq %v data %s", m.seq,
-                      hex.EncodeToString(m.data.Bytes()))
+   return fmt.Sprintf("{seq:%v, mtype:%08s, data:%s}", m.seq,
+                      strconv.FormatInt(int64(m.mtype), 2),
+                      hex.EncodeToString(m.data))
 }
 
 func (m *Message) IsReqMsg() bool {
    if 0 == m.mtype & MSG_RSP_BIT {
+      return true
+   }
+   return false
+}
+
+func (m *Message) IsHandshakeMsg() bool {
+   if 0 == m.mtype & MSG_HANDSHAKE_BIT {
       return false
    }
    return true
@@ -43,13 +52,13 @@ func (m *Message) WriteTo(w io.Writer) (int, error) {
    if err:=binary.Write(w, binary.LittleEndian, m.mtype); err!=nil {
       return 0, err
    }
-   if err:=binary.Write(w, binary.LittleEndian, uint16(m.data.Len())); err!=nil {
+   if err:=binary.Write(w, binary.LittleEndian, uint16(len(m.data))); err!=nil {
       return 0, err
    }
-   if _, err:=m.data.WriteTo(w);err!=nil {
+   if _, err:=w.Write(m.data);err!=nil {
       return 0, err
    }
-   cnt := 4 + 1 + 2 + m.data.Len()
+   cnt := 4 + 1 + 2 + len(m.data)
    return cnt, nil
 }
 
@@ -64,11 +73,12 @@ func (m *Message) ReadFrom(r io.Reader) error {
    if err:=binary.Read(r, binary.LittleEndian, &ld);err!=nil{
       return err
    }
-   if uint16(m.data.Cap()) < ld {
-      m.data.Grow(int(ld))
+   if uint16(cap(m.data)) < ld {
+      m.data = make([]byte, ld)
+   }else{
+      m.data = m.data[:ld]
    }
-   m.data.Reset()
-   if _, err:=io.CopyN(&m.data, r, int64(ld));err!=nil {
+   if _, err:=io.ReadFull(r, m.data);err!=nil {
       return err
    }
    return nil
@@ -82,7 +92,7 @@ func (m *Message) MakeResponse() *Message {
 }
 
 func NewRequest() *Message{
-   m := &Message{}
+   m := NewMessage()
    m.mtype &= ^MSG_RSP_BIT
    return m
 }
