@@ -91,7 +91,7 @@ func (t *TcpTrans) txQuotaLoop() {
 }
 
 func (t *TcpTrans) txLoop(p *Peer, cli net.Conn) {
-   quotaCnt := 0
+   quotaCnt := int64(0)
    for m := range p.txChan {
       cnt, err := m.WriteTo(cli)
       if err != nil {
@@ -102,7 +102,7 @@ func (t *TcpTrans) txLoop(p *Peer, cli net.Conn) {
          if quotaCnt < 0 {
             for {
                 quota := <-t.txQuota
-                quotaCnt = quotaCnt + quota * 1024
+                quotaCnt = quotaCnt + int64(quota * 1024)
                 if quotaCnt > 0 {
                    break
                 }
@@ -115,7 +115,7 @@ func (t *TcpTrans) txLoop(p *Peer, cli net.Conn) {
 func (t *TcpTrans) rxLoop(p *Peer, cli net.Conn) {
    for {
       m := NewMessage()
-      if err:=m.ReadFrom(cli);err!=nil{
+      if _, err:=m.ReadFrom(cli);err!=nil{
          //TODO: close both tx and rx loop
       }
       if m.IsReqMsg() {

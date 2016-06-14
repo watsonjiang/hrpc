@@ -45,43 +45,51 @@ func (m *Message) IsHandshakeMsg() bool {
    return true
 }
 
-func (m *Message) WriteTo(w io.Writer) (int, error) {
+func (m *Message) WriteTo(w io.Writer) (int64, error) {
+   cnt := int64(0)
    if err:=binary.Write(w, binary.LittleEndian, m.seq); err!=nil {
-      return 0, err
+      return cnt, err
    }
+   cnt += int64(4)
    if err:=binary.Write(w, binary.LittleEndian, m.mtype); err!=nil {
-      return 0, err
+      return cnt, err
    }
+   cnt += int64(1)
    if err:=binary.Write(w, binary.LittleEndian, uint16(len(m.data))); err!=nil {
-      return 0, err
+      return cnt, err
    }
+   cnt += int64(2)
    if _, err:=w.Write(m.data);err!=nil {
-      return 0, err
+      return cnt, err
    }
-   cnt := 4 + 1 + 2 + len(m.data)
+   cnt += int64(len(m.data))
    return cnt, nil
 }
 
-func (m *Message) ReadFrom(r io.Reader) error {
+func (m *Message) ReadFrom(r io.Reader) (int64, error) {
+   cnt := int64(0)
    if err:=binary.Read(r, binary.LittleEndian, &m.seq);err!=nil {
-      return err
+      return cnt, err
    }
+   cnt += int64(1)
    if err:=binary.Read(r, binary.LittleEndian, &m.mtype);err!=nil{
-      return err
+      return cnt, err
    }
    var ld uint16
    if err:=binary.Read(r, binary.LittleEndian, &ld);err!=nil{
-      return err
+      return cnt, err
    }
+   cnt += int64(2)
    if uint16(cap(m.data)) < ld {
       m.data = make([]byte, ld)
    }else{
       m.data = m.data[:ld]
    }
    if _, err:=io.ReadFull(r, m.data);err!=nil {
-      return err
+      return cnt, err
    }
-   return nil
+   cnt += int64(len(m.data))
+   return cnt, nil
 }
 
 func (m *Message) MakeResponse() *Message {
