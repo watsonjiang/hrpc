@@ -17,12 +17,14 @@ func TestRequest(t *testing.T) {
    var raw bytes.Buffer
    cnt, err := req.WriteTo(&raw)
    t.Logf("req: %s raw: %s", req, hex.EncodeToString(raw.Bytes()))
-   if cnt!=raw.Len() || err!=nil {
+   if cnt!=int64(raw.Len()) || err!=nil {
       t.Error("WriteTo not correct.", cnt, raw.Len())
    }
    m := NewMessage()
-   if err:=m.ReadFrom(&raw);err!=nil {
+   if n,err:=m.ReadFrom(&raw);err!=nil {
       t.Fatal("ReadFrom return error.", err)
+   }else if n != cnt {
+      t.Error("ReadFrom return cnt not correct. exp:", cnt, "act:", n)
    }
    if m.seq != 1 {
       t.Error("ReadFrom not correct.")
@@ -35,3 +37,5 @@ func TestRequest(t *testing.T) {
               string(m.data))
    }
 }
+
+

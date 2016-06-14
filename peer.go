@@ -30,6 +30,14 @@ func NewPeer(info string) *Peer {
    return p
 }
 
+func (p *Peer) String() string {
+   if b, err:=json.Marshal(p); err!=nil{
+      return ""
+   }else{
+      return string(b)
+   }
+}
+
 func (p *Peer) WriteTo(w io.Writer) (int64, error) {
    cnt := int64(0)
    if err:=binary.Write(w, binary.LittleEndian, int8(len(p.Id)));err!=nil{

@@ -71,10 +71,11 @@ func (m *Message) ReadFrom(r io.Reader) (int64, error) {
    if err:=binary.Read(r, binary.LittleEndian, &m.seq);err!=nil {
       return cnt, err
    }
-   cnt += int64(1)
+   cnt += int64(4)
    if err:=binary.Read(r, binary.LittleEndian, &m.mtype);err!=nil{
       return cnt, err
    }
+   cnt += int64(1)
    var ld uint16
    if err:=binary.Read(r, binary.LittleEndian, &ld);err!=nil{
       return cnt, err

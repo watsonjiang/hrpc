@@ -2,6 +2,7 @@ package hrpc
 
 import (
    "testing"
+   "bytes"
 )
 
 func TestNewPeer(t *testing.T) {
@@ -53,3 +54,24 @@ func TestRegPutGet(t *testing.T){
       t.Error("Get not correct.")
    }
 }
+
+func TestPeerMarshalUnmarshal(t *testing.T) {
+   peerInfo := `{"Id":"peer1", "Addr":["127.0.0.1:1234"]}`
+   peer := NewPeer(peerInfo)
+   if peer == nil {
+      t.Fatal("NewPeer return nil")
+   }
+   var raw = new(bytes.Buffer)
+   n, err := peer.WriteTo(raw)
+   if err!=nil || n != int64(raw.Len()) {
+      t.Error("peer WriteTo not correct.")
+   }
+   peer1 := new(Peer)
+   l := int64(raw.Len())
+   n, err = peer1.ReadFrom(raw)
+   if err!=nil || n != l {
+      t.Error("peer ReadFrom not correct.", err, n, l)
+   }
+   t.Logf("%v", peer1)
+}
+
