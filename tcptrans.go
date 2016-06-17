@@ -3,6 +3,7 @@ package hrpc
 import (
    "net"
    "fmt"
+   "bytes"
    log "github.com/golang/glog"
 )
 
@@ -63,16 +64,47 @@ func (t *TcpTrans) AddPeer(peerInfo string) error {
    p := NewPeer(peerInfo)
    t.peerReg.Put(p)
    for i:=0; i<t.cfg.MaxConns; i++ {
-      conn, err := net.Dial("tcp", p.Addr[0])
-      fmt.Println("cli make conn", p.Addr, conn, err)
-      go t.handshake(conn)
+      if log.V(1) {
+         log.V(1).Infoln("cli make conn", p.Addr)
+      }
+      if conn, err:=net.Dial("tcp", p.Addr[0]);err!=nil{
+         log.Errorln("Fail to dial", p.Addr[0], err)
+      }else{
+         go t.linkNew(conn)
+      }
    }
    return nil
 }
 
-func (t *TcpTrans) handshake(conn net.Conn) {
-   var peer *Peer
-   t.linkMade(peer, conn)
+func (t *TcpTrans) handshake(conn net.Conn) *Peer {
+   peer := NewPeer(t.cfg.LocalPeerInfo)
+   buf := new(bytes.Buffer)
+   peer.WriteTo(buf)
+   m_req := NewRequest()
+   m_req.data = buf.Bytes()
+   m_req.seq = 0
+   m_req.mtype |= MSG_HANDSHAKE_BIT
+   log.Infoln("Send handshake request", m_req)
+   m_req.WriteTo(conn)
+
+   m_rsp := NewMessage()
+   if _, err:=m_rsp.ReadFrom(conn);err!=nil{
+      log.Errorln("Fail to read handshake response.", err)
+      conn.Close()
+      return nil
+   }
+   if !m_rsp.IsHandshakeMsg() {
+      log.Errorln("Invalid handshake response. rsp:", m_rsp)
+      conn.Close()
+      return nil
+   }
+   r_peer := &Peer{}
+   if _, err:=r_peer.ReadFrom(bytes.NewBuffer(m_rsp.data));err!=nil{
+      log.Errorln("Invalid handshake response. rsp:", m_rsp)
+      conn.Close()
+      return nil
+   }
+   return r_peer
 }
 
 
@@ -139,9 +171,11 @@ func (t *TcpTrans) Listen(addr string) error {
   return nil
 }
 
-func (t *TcpTrans) waitForHandshake(conn net.Conn) {
-   var peer *Peer
-   t.linkMade(peer, conn)
+func (t *TcpTrans) linkNew(conn net.Conn) {
+   r_peer := handshake(conn)
+   if r_peer != nil {
+      t.linkMade(r_peer, conn)
+   }
 }
 
 func (t *TcpTrans) listenLoop() {
