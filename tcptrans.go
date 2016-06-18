@@ -76,35 +76,60 @@ func (t *TcpTrans) AddPeer(peerInfo string) error {
    return nil
 }
 
-func (t *TcpTrans) handshake(conn net.Conn) *Peer {
-   peer := NewPeer(t.cfg.LocalPeerInfo)
+
+func sendHandshake(p *Peer, c net.Conn) error {
    buf := new(bytes.Buffer)
-   peer.WriteTo(buf)
+   p.WriteTo(buf)
    m_req := NewRequest()
    m_req.data = buf.Bytes()
    m_req.seq = 0
    m_req.mtype |= MSG_HANDSHAKE_BIT
-   log.Infoln("Send handshake request", m_req)
-   m_req.WriteTo(conn)
-
-   m_rsp := NewMessage()
-   if _, err:=m_rsp.ReadFrom(conn);err!=nil{
-      log.Errorln("Fail to read handshake response.", err)
-      conn.Close()
-      return nil
+   log.Infoln("Send handshake message", m_req)
+   if _, err := m_req.WriteTo(c);err!=nil{
+      log.Errorln("Fail to send handshake message.", err)
+      return err
    }
-   if !m_rsp.IsHandshakeMsg() {
-      log.Errorln("Invalid handshake response. rsp:", m_rsp)
-      conn.Close()
-      return nil
+   return nil
+}
+
+func readHandshake(c net.Conn) (*Peer, error){
+   m := NewMessage()
+   if _, err:=m.ReadFrom(c);err!=nil{
+      log.Errorln("Fail to read handshake message.", err)
+      return nil, err
+   }
+   if !m.IsHandshakeMsg() {
+      log.Errorln("Invalid handshake message.", m)
+      return nil, ERR_INVALID_HANDSHAKE_MSG
    }
    r_peer := &Peer{}
-   if _, err:=r_peer.ReadFrom(bytes.NewBuffer(m_rsp.data));err!=nil{
-      log.Errorln("Invalid handshake response. rsp:", m_rsp)
-      conn.Close()
-      return nil
+   if _, err:=r_peer.ReadFrom(bytes.NewBuffer(m.data));err!=nil{
+      log.Errorln("Invalid handshake message.", m, err)
+      return nil, err
    }
-   return r_peer
+   return r_peer, nil
+}
+
+
+func handshake(l_peer *Peer, conn net.Conn) (*Peer, error) {
+   if err:=sendHandshake(l_peer, conn);err!=nil{
+      return nil, err
+   }
+   m := NewMessage()
+   if _, err:=m.ReadFrom(conn);err!=nil{
+      log.Errorln("Fail to read handshake message.", err)
+      return nil, err
+   }
+   if !m.IsHandshakeMsg() {
+      log.Errorln("Invalid handshake message.", m)
+      return nil, ERR_INVALID_HANDSHAKE_MSG
+   }
+   r_peer := &Peer{}
+   if _, err:=r_peer.ReadFrom(bytes.NewBuffer(m.data));err!=nil{
+      log.Errorln("Invalid handshake message.", m, err)
+      return nil, err
+   }
+   return r_peer, nil
 }
 
 
@@ -172,8 +197,12 @@ func (t *TcpTrans) Listen(addr string) error {
 }
 
 func (t *TcpTrans) linkNew(conn net.Conn) {
-   r_peer := handshake(conn)
-   if r_peer != nil {
+   l_peer := NewPeer(t.cfg.LocalPeerInfo)
+   if r_peer, err:=handshake(l_peer, conn);err!=nil{
+      log.Errorln("Handhake failed. close connection.")
+      conn.Close()
+      return
+   }else{
       t.linkMade(r_peer, conn)
    }
 }
@@ -186,7 +215,7 @@ func (t *TcpTrans) listenLoop() {
    for {
       client, _ := listener.Accept()
       fmt.Println("svr got conn", client)
-      go t.waitForHandshake(client)
+      go t.linkNew(client)
    }
 }
 

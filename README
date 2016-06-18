@@ -1,0 +1,5 @@
+* handshake
+  when tcp link established, both side of the link send handshake message
+  to it's remote friend, the request contains the local peer info.
+  
+

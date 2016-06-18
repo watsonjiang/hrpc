@@ -1,5 +1,10 @@
 package hrpc
 
+import (
+   "errors"
+)
+
+var ERR_INVALID_HANDSHAKE_MSG = errors.New("Invalid handshake message")
 
 //interface to both tcp transporter and udp transporter
 type Trans interface{
