@@ -76,7 +76,6 @@ func (t *TcpTrans) AddPeer(peerInfo string) error {
    return nil
 }
 
-
 func sendHandshake(p *Peer, c net.Conn) error {
    buf := new(bytes.Buffer)
    p.WriteTo(buf)
@@ -131,7 +130,6 @@ func handshake(l_peer *Peer, conn net.Conn) (*Peer, error) {
    }
    return r_peer, nil
 }
-
 
 func (t *TcpTrans) txQuotaLoop() {
    ch := make(chan int64, 1)

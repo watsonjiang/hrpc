@@ -4,6 +4,7 @@ import (
    "net"
    "time"
    "bytes"
+   "io"
 )
 
 type BaseMockConn struct{
@@ -16,7 +17,7 @@ func (c *BaseMockConn) getTx() []byte{
 }
 
 func (c *BaseMockConn) Read(b []byte) (n int, err error) {
-   return 0, nil
+   return c.Rx.Read(b)
 }
 
 func (c *BaseMockConn) Write(b []byte) (n int, err error) {
@@ -75,4 +76,12 @@ func (e *TimeoutError) Temporary() bool {
 
 func (c *MockWriteTimeoutConn) Write(b []byte) (n int, err error) {
    return 0, &TimeoutError{}
+}
+
+type MockReadEofConn struct {
+   BaseMockConn
+}
+
+func (c *MockReadEofConn) Read(b []byte) (n int, err error) {
+   return 0, io.EOF
 }
