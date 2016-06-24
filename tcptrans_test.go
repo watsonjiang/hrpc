@@ -75,4 +75,3 @@ func TestReadHandshake2(t *testing.T) {
    }
 }
 
-

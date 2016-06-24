@@ -4,6 +4,7 @@ import (
    "net"
    "fmt"
    "bytes"
+   "time"
    log "github.com/golang/glog"
 )
 
@@ -84,15 +85,20 @@ func sendHandshake(p *Peer, c net.Conn) error {
    m_req.seq = 0
    m_req.mtype |= MSG_HANDSHAKE_BIT
    log.Infoln("Send handshake message", m_req)
+   c.SetWriteDeadline(time.Now().Add(HANDSHAKE_TIMEOUT))
    if _, err := m_req.WriteTo(c);err!=nil{
       log.Errorln("Fail to send handshake message.", err)
       return err
    }
+   c.SetWriteDeadline(time.Time{})
    return nil
 }
 
+var HANDSHAKE_TIMEOUT = 1 * time.Second
+
 func readHandshake(c net.Conn) (*Peer, error){
    m := NewMessage()
+   c.SetReadDeadline(time.Now().Add(HANDSHAKE_TIMEOUT))
    if _, err:=m.ReadFrom(c);err!=nil{
       log.Errorln("Fail to read handshake message.", err)
       return nil, err
@@ -106,6 +112,7 @@ func readHandshake(c net.Conn) (*Peer, error){
       log.Errorln("Invalid handshake message.", m, err)
       return nil, err
    }
+   c.SetReadDeadline(time.Time{})
    return r_peer, nil
 }
 
