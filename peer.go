@@ -19,7 +19,6 @@ type Peer struct {
    Id string
    Addr []string
    txChan  chan *Message
-   links []Link
 }
 
 func NewPeer(info string) *Peer {
@@ -145,5 +144,15 @@ func (r *PeerRegistry) Get(id string) *Peer {
       return p
    }
    return nil
+}
+
+type func JobT(p *Peer) error
+// map all elem peers using function job
+func (r *PeerRegistry) filter(job JobT) error {
+   r.lock.Lock()
+   defer r.lock.Unlock()
+   for _, p := range r.reg {
+      job(p)
+   }
 }
 

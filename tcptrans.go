@@ -11,7 +11,7 @@ import (
 type TcpTrans struct {
    cfg *TransConfig
    seq  *Sequencer32
-   peerReg *PeerRegistry
+   chReg *PeerRegistry
    timer *TimerQueue
    txQuota chan int
    listener TransListener
@@ -20,7 +20,7 @@ type TcpTrans struct {
 func NewTcpTrans(c *TransConfig) Trans {
    t := &TcpTrans{}
    t.cfg = c
-   t.peerReg = NewPeerRegistry(t)
+   t.chReg = NewChannelRegistry()
    t.timer = NewTimerQueue()
    t.timer.Start()
    t.seq = NewSequencer32(0)
@@ -30,27 +30,25 @@ func NewTcpTrans(c *TransConfig) Trans {
    return t
 }
 
-//PeerRegistryListener
-func (t *TcpTrans) OnPeerAdded(p *Peer) {
-   addr := p.Addr[0]
-   for i:=0;i<t.cfg.MaxConns; i++ {
-      if conn, err:=net.Dial("tcp", addr);err!=nil {
-         log.Errorf("Fail to connect addr[%v], err:%v", addr, err)
-         continue
-      }else{
-         t.linkMade(p, conn)
-      }
-   }
-}
-
-func (t *TcpTrans) OnPeerUpdated(oldv, newv *Peer) {
-
-}
-
 //background routine, create/remove link as needed.
 func (t *TcpTrans) linkMonitorLoop() {
+   job := func(p *Peer) error{
+      if len(p.links) == 0 {
+         //create link 
+	 l_peer := NewPeer(t.cfg.LocalPeerInfo)
+	 link := NewLink(l_peer, p)
+         if link != nil{
+	    link.listener = t.listener
+	    link.flowCtlEnabled = false
+	    link.txChan = p.txChan
+	    link.Start()
+            p.links = append(p.links, link)
+	 }
+      }
+   }
    for {
       time.Sleep(3*time.Second)
+      t.peerReg.Map(job)
    }
 }
 

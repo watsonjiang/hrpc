@@ -33,3 +33,5 @@ type TransConfig struct {
 func NewTransDefaultCfg() *TransConfig {
    return &TransConfig{}
 }
+
+var GlobalTransConf *TransConfig
