@@ -1,7 +1,12 @@
 package hrpc
 
-type Channel struct {
+import (
+   "sync"
+   )
 
+type Channel struct {
+   l_peer *Peer   //local peer
+   r_peer *Peer   //remote peer
 }
 
 
@@ -31,7 +36,7 @@ func (r *ChannelRegistry) Get(id string) *Peer {
    return nil
 }
 
-type func JobT(p *Peer) error
+type JobT func(p *Peer) error
 // map all elem peers using function job
 func (r *ChannelRegistry) filter(job JobT) error {
    r.lock.Lock()
@@ -42,6 +47,6 @@ func (r *ChannelRegistry) filter(job JobT) error {
    return nil
 }
 
-func (r *ChannelRegistry) doWith(id, job jobT) error {
+func (r *ChannelRegistry) doWith(id, job JobT) error {
    return nil
 }

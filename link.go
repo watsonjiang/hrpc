@@ -17,19 +17,20 @@ type Link struct {
    conn   net.Conn     //tcp connection it holds
 }
 
-func NewLink(r_peer *Peer, txChan chan *Mesage) *Link{
+func NewLink(ch *Channel) *Link{
    return &Link{}
 }
 
 func (l *Link) Start() {
-   addr := r_peer.Addr[0]
+   addr := l.ch.r_peer.Addr[0]
    if conn, err:=net.Dial("tcp", addr);err!=nil {
       log.Errorf("Fail to connect addr[%v], err:%v", addr, err)
       return nil
    }else{
+      l_peer := l.ch.l_peer
       if _, err:=handshake(l_peer, conn);err!=nil{
          log.Error("Fail to handshake with", r_peer, err)
-	 return nil
+	      return nil
       }
       log.V(1).Infoln("Link established.", l_peer, "->", r_peer)
       link := &Link{}
