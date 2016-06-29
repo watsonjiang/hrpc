@@ -48,7 +48,7 @@ func sendHandshake(p *Peer, c net.Conn) error {
    m_req.seq = 0
    m_req.mtype |= MSG_HANDSHAKE_BIT
    log.Infoln("Send handshake message", m_req)
-   c.SetWriteDeadline(time.Now().Add(HANDSHAKE_TIMEOUT))
+   c.SetWriteDeadline(time.Now().Add(MESSAGE_READ_TIMEOUT))
    if _, err := m_req.WriteTo(c);err!=nil{
       log.Errorln("Fail to send handshake message.", err)
       return err
@@ -57,11 +57,11 @@ func sendHandshake(p *Peer, c net.Conn) error {
    return nil
 }
 
-var HANDSHAKE_TIMEOUT = 1 * time.Second
+var MESSAGE_READ_TIMEOUT = 10 * time.Second
 
 func readHandshake(c net.Conn) (*Peer, error){
    m := NewMessage()
-   c.SetReadDeadline(time.Now().Add(HANDSHAKE_TIMEOUT))
+   c.SetReadDeadline(time.Now().Add(MESSAGE_READ_TIMEOUT))
    if _, err:=m.ReadFrom(c);err!=nil{
       log.Errorln("Fail to read handshake message.", err)
       return nil, err
@@ -75,7 +75,6 @@ func readHandshake(c net.Conn) (*Peer, error){
       log.Errorln("Invalid handshake message.", m, err)
       return nil, err
    }
-   c.SetReadDeadline(time.Time{})
    return r_peer, nil
 }
 
@@ -126,6 +125,7 @@ func (l *Link) txLoop(p *Peer, cli net.Conn) {
 func (l *Link) rxLoop(p *Peer, cli net.Conn) {
    for {
       m := NewMessage()
+      cli.SetReadDeadline(time.Now().Add(MESSAGE_READ_TIMEOUT))
       if _, err:=m.ReadFrom(cli);err!=nil{
          //TODO: close both tx and rx loop
       }
